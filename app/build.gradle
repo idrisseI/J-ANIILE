@@ -1,0 +1,53 @@
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+
+android {
+    compileSdk 32
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_9
+        targetCompatibility JavaVersion.VERSION_1_9
+    }
+    defaultConfig {
+        applicationId "com.testconnexion.android.sdk.demo"
+        minSdkVersion 19
+        targetSdkVersion 32
+        versionCode 11
+        versionName "1.5 édition developpeur"
+        multiDexEnabled true
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+}
+
+dependencies {
+    implementation 'androidx.appcompat:appcompat:1.4.2'
+    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
+    implementation 'com.alexvasilkov:gesture-views:2.7.1'
+    implementation 'org.osmdroid:osmdroid-android:6.1.10'
+    implementation 'com.github.MKergall:osmbonuspack:6.7.0'
+    implementation 'com.google.maps.android:android-maps-utils:2.3.0'
+    implementation 'com.google.maps.android:maps-utils-ktx:3.2.1'
+    implementation 'com.android.support:multidex:1.0.3'
+
+    implementation "com.squareup.okhttp3:okhttp:4.9.3"
+    implementation "com.squareup.okio:okio:3.0.0"
+
+    implementation 'com.opencsv:opencsv:5.6'
+    implementation 'com.speedchecker:android-sdk:4.2.129-demo'
+    implementation 'androidx.core:core-ktx:1.8.0'
+    implementation 'com.google.android.material:material:1.6.1'
+    implementation 'androidx.preference:preference-ktx:1.2.0'
+
+    implementation "com.android.volley:volley:1.2.1"
+
+}
+
+repositories {
+    mavenCentral()
+}

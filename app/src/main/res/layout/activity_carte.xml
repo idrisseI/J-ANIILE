@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+  xmlns:app="http://schemas.android.com/apk/res-auto"
+  xmlns:tools="http://schemas.android.com/tools"
+  android:layout_width="match_parent"
+  android:layout_height="match_parent"
+  android:orientation="vertical" >
+  <LinearLayout
+      android:layout_width="match_parent"
+      android:layout_height="match_parent"
+      android:orientation="vertical">
+
+    <org.osmdroid.views.MapView
+      android:id="@+id/map"
+      tilesource = "Mapnik"
+      android:layout_width="match_parent"
+      android:layout_height="600dp"
+      android:longClickable="false"
+      android:layout_weight="1"
+      app:layout_constraintBottom_toTopOf="@id/linear1" />
+
+
+
+      <LinearLayout
+        android:id="@+id/linear1"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_weight="0"
+        android:paddingTop="5dp"
+        android:paddingBottom="5dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/map">
+
+        <LinearLayout
+          android:layout_width = "match_parent"
+          android:layout_height = "wrap_content"
+          android:paddingStart="10dp"
+          android:paddingEnd="10dp"
+          android:orientation="horizontal">
+
+          <Button
+            android:id="@+id/bouton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:drawableStart="@drawable/ic_baseline_speed_24"
+            android:drawableLeft="@drawable/ic_baseline_speed_24"
+            android:text="@string/test_wifi"
+            tools:ignore = "ButtonStyle,RtlHardcoded,UsingOnClickInXml" />
+
+          <Button android:id="@+id/show_result"
+            android:layout_width = "wrap_content"
+            android:layout_height = "wrap_content"
+            android:layout_weight="1"
+            android:text="@string/show_result"
+            tools:ignore = "ButtonStyle" />
+
+        </LinearLayout>
+
+        <LinearLayout
+          android:layout_width="match_parent"
+          android:layout_height="wrap_content"
+          android:paddingStart="10dp"
+          android:paddingEnd="10dp"
+          android:orientation="horizontal">
+
+          <Button
+            android:id="@+id/etage"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:onClick="etage"
+            android:text="@string/etage0"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            tools:ignore = "UsingOnClickInXml" />
+
+          <Button
+            android:id="@+id/button"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:drawableStart="@android:drawable/ic_input_add"
+            android:text="@string/ajouter_salle"
+            app:layout_constraintStart_toEndOf="@id/etage"
+            app:layout_constraintTop_toTopOf="parent"
+            tools:ignore = "UsingOnClickInXml" />
+        </LinearLayout>
+      </LinearLayout>
+  </LinearLayout>
+
+
+
+
+</androidx.constraintlayout.widget.ConstraintLayout>

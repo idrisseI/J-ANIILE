@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2" xmlns:gx="http://www.google.com/kml/ext/2.2" xmlns:kml="http://www.opengis.net/kml/2.2" xmlns:atom="http://www.w3.org/2005/Atom">
+<GroundOverlay>
+	<name>Sans titre - Superposition d&apos;image</name>
+	<visibility>0</visibility>
+	<open>1</open>
+	<LookAt>
+		<longitude>5.506488318969501</longitude>
+		<latitude>43.70992109476059</latitude>
+		<altitude>0</altitude>
+		<heading>61.96420703148715</heading>
+		<tilt>12.24348230033819</tilt>
+		<range>322.2716782397645</range>
+		<gx:altitudeMode>relativeToSeaFloor</gx:altitudeMode>
+	</LookAt>
+	<color>8affffff</color>
+	<Icon>
+		<href>VDD RDC(1)_page-0001.png</href>
+		<viewBoundScale>0.75</viewBoundScale>
+	</Icon>
+	<gx:LatLonQuad>
+		<coordinates>
+			5.505361111111111,43.70980555555556,0 5.506055555555555,43.70886111111111,0 5.507638888888889,43.70950000000001,0 5.506897222222222,43.71045,0 
+		</coordinates>
+	</gx:LatLonQuad>
+</GroundOverlay>
+</kml>

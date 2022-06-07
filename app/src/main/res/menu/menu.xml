@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <item
+        android:id="@+id/infos"
+        android:title="@string/informations"
+        android:icon="@android:drawable/ic_dialog_info"
+        android:visible="true"
+        android:visibility="gone"
+        app:showAsAction="ifRoom"/>
+    <item
+        android:id="@+id/Aide"
+        android:icon="@android:drawable/ic_menu_help"
+        android:title="@string/help"
+        android:visible="true"
+        app:showAsAction="ifRoom"/>
+    <item
+        android:id="@+id/contact"
+        android:icon="@android:drawable/sym_action_email"
+        android:title="@string/contact"
+        android:visible="true" />
+    <item
+        android:id="@+id/détruire"
+        android:icon="@drawable/ic_baseline_stop_circle_24"
+        android:title="@string/stop_app"
+        android:visible="true"/>
+    <item
+        android:id="@+id/nous_soutenir"
+        android:title="@string/support"
+        android:visible="true" />
+    <item
+        android:id="@+id/code_bonus"
+        android:title="@string/bonus_code"
+        android:visible="true" />
+</menu>
