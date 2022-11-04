@@ -38,24 +38,36 @@
             android:checked="true"
             android:text="@string/day_test" />
 
-        <LinearLayout
+        <RadioGroup
+            android:id="@+id/choix_donnees"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal">
-        <androidx.appcompat.widget.SwitchCompat
-            android:id="@+id/up_down"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/tri_par"
-            android:padding="5dp"
-            android:paddingStart="15dp"
-            android:paddingEnd="15dp"/>
-        <TextView
-            android:id="@+id/up_down_txt"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/download"/>
-        </LinearLayout>
+            android:checkedButton="@id/intensite_Cell">
+
+            <RadioButton
+                android:id="@+id/intensite_Cell"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/rssi_cellulaire" />
+
+            <RadioButton
+                android:id="@+id/intensite_WLAN"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/rssi_wlan" />
+
+            <RadioButton
+                android:id="@+id/debit_down"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/download" />
+
+            <RadioButton
+                android:id="@+id/debit_up"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/upload" />
+        </RadioGroup>
 
 
     </LinearLayout>

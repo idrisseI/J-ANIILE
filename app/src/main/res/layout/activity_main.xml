@@ -6,115 +6,141 @@
   android:layout_height="match_parent"
   tools:context="com.testconnexion.android.sdk.demo.MainActivity">
 
-  <ImageView
-    android:id="@+id/imageView_logo"
-    android:layout_width="wrap_content"
-    android:layout_height="wrap_content"
-    android:scaleType="fitCenter"
-    app:layout_constraintStart_toStartOf="parent"
-    app:layout_constraintEnd_toEndOf="parent"
-    app:layout_constraintTop_toTopOf="parent"
-    app:srcCompat="@drawable/j_aniile"
-    tools:ignore = "ContentDescription" />
-
-  <TextView
-    android:id="@+id/textView_stage"
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:layout_marginStart="15dp"
-    android:layout_marginEnd="15dp"
-    android:background="#0022FF"
-    android:gravity="center"
-    android:inputType="textMultiLine|textNoSuggestions"
-    android:lineSpacingExtra="8sp"
-
-    android:padding="8dp"
-    android:text="@string/Pret"
-    android:textColor="@android:color/white"
-    android:textSize="18sp"
-    app:layout_constraintStart_toStartOf="parent"
-    app:layout_constraintEnd_toEndOf="parent"
-    app:layout_constraintTop_toBottomOf="@+id/imageView_logo" />
-
-  <Button
-    android:id="@+id/button_carte"
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:layout_marginStart="16dp"
-    android:layout_marginEnd="16dp"
-    android:layout_marginTop="8dp"
-    android:clickable="true"
-    android:drawableStart="@drawable/ic_menu_mapmode"
-    android:drawableLeft="@drawable/ic_menu_mapmode"
-    android:gravity="center"
-    android:text="@string/map"
-    app:layout_constraintStart_toStartOf="parent"
-    app:layout_constraintEnd_toEndOf="parent"
-    app:layout_constraintTop_toBottomOf="@+id/textView_stage"
-    tools:ignore="SpeakableTextPresentCheck" />
-
-  <TextView
-      android:id="@+id/textView_result"
+  <ScrollView
       android:layout_width="match_parent"
-      android:layout_height="wrap_content"
-      android:layout_marginStart="16dp"
-      android:layout_marginTop="16dp"
-      android:layout_marginEnd="16dp"
-      android:layout_marginBottom="8dp"
-      android:gravity="center_horizontal"
-      android:inputType="textMultiLine|textNoSuggestions"
-      android:scrollbars="vertical"
-      app:layout_constraintBottom_toTopOf="@+id/textView_log"
-      app:layout_constraintEnd_toEndOf="parent"
-      app:layout_constraintStart_toStartOf="parent"
-      app:layout_constraintTop_toBottomOf="@+id/button_carte"
-      tools:ignore="SpeakableTextPresentCheck,TouchTargetSizeCheck" />
+      android:layout_height="match_parent">
+
+    <LinearLayout
+        android:id="@+id/ligne_principale"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingStart="8dp"
+        android:paddingEnd="8dp"
+        android:orientation="vertical">
+
+      <ImageView
+          android:id="@+id/imageView_logo"
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:scaleType="fitCenter"
+          app:srcCompat="@drawable/j_aniile"
+          tools:ignore="ContentDescription" />
+
+      <RadioGroup
+          android:id="@+id/choix_mesure"
+          android:layout_width="wrap_content"
+          android:layout_height="match_parent"
+          android:layout_gravity="center_horizontal"
+          android:checkedButton="@id/choix_intensite"
+          android:orientation="horizontal">
+
+        <RadioButton
+            android:id="@+id/choix_intensite"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="intensité" />
+
+        <RadioButton
+            android:id="@+id/choix_debit"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="débit" />
+      </RadioGroup>
+
+      <TextView
+          android:id="@+id/textView_stage"
+          android:layout_width="match_parent"
+          android:layout_height="wrap_content"
+          android:background="#0022FF"
+          android:clickable="false"
+          android:gravity="center"
+          android:inputType="textMultiLine|textNoSuggestions"
+
+          android:lineSpacingExtra="8sp"
+          android:padding="8dp"
+          android:text="@string/Pret"
+          android:textColor="@android:color/white"
+          android:textSize="18sp"
+          android:visibility="gone" />
 
 
-  <TextView
-    android:id = "@+id/textView_log"
-    android:layout_width = "match_parent"
-    android:layout_height = "150dp"
-    android:layout_marginStart = "8dp"
-    android:layout_marginEnd = "8dp"
-    android:background = "@android:color/black"
-    android:padding = "8dp"
-    android:scrollbars = "vertical"
-    android:textColor = "@android:color/white"
-    android:textIsSelectable = "true"
-    app:layout_constraintBottom_toTopOf = "@+id/launch_speedTest"
-    app:layout_constraintEnd_toEndOf = "parent"
-    app:layout_constraintHorizontal_bias = "0.0"
-    app:layout_constraintStart_toStartOf = "parent"
-    app:layout_constraintTop_toBottomOf = "@+id/textView_result"
-    tools:ignore = "SpeakableTextPresentCheck" />
+      <ToggleButton
+          android:id="@+id/launch_speedTest"
+          android:layout_width="match_parent"
+          android:layout_height="wrap_content"
+          android:layout_gravity="center"
 
-  <Button
-      android:id="@+id/launch_speedTest"
-      android:layout_width="wrap_content"
-      android:layout_height="wrap_content"
-      android:layout_marginStart="8dp"
-      android:layout_marginTop="8dp"
-      android:drawableStart="@drawable/ic_baseline_speed_24"
-      android:drawableLeft="@drawable/ic_baseline_speed_24"
-      android:drawablePadding="8dp"
-      android:text="@string/debut"
-      app:layout_constraintBottom_toTopOf="@id/Boucle"
-      app:layout_constraintEnd_toEndOf="parent"
-      app:layout_constraintStart_toStartOf="parent"
-      app:layout_constraintTop_toBottomOf="@id/textView_log" />
+          android:drawableStart="@drawable/ic_baseline_speed_24"
+          android:drawablePadding="8dp"
+          android:text="@string/debut"
+          android:textOff="@string/debut"
+          android:textOn="@string/fin_enr" />
 
-  <Switch
-      android:id="@+id/Boucle"
-      android:layout_width="wrap_content"
-      android:layout_height="wrap_content"
-      android:drawableStart="@drawable/ic_baseline_loop_24"
-      android:minHeight="48dp"
-      android:text="@string/loop"
-      android:textColorHighlight="#E30606"
-      android:theme="@style/Theme.Switch"
-      app:layout_constraintEnd_toEndOf="parent"
-      app:layout_constraintStart_toStartOf="parent"
-      app:layout_constraintTop_toBottomOf="@id/launch_speedTest"
-      app:useMaterialThemeColors="false" />
+      <Button
+          android:id="@+id/button_carte"
+          android:layout_width="match_parent"
+          android:layout_height="wrap_content"
+          android:layout_marginTop="8dp"
+          android:backgroundTint="#52869E"
+          android:clickable="true"
+          android:drawableStart="@drawable/ic_menu_mapmode"
+          android:drawableLeft="@drawable/ic_menu_mapmode"
+          android:gravity="center"
+          android:text="@string/map"
+          app:icon="@android:drawable/ic_menu_mapmode"
+          tools:ignore="SpeakableTextPresentCheck" />
+
+      <TextView
+          android:id="@+id/textView_result_WLAN"
+          android:layout_width="match_parent"
+          android:layout_height="wrap_content"
+          android:layout_marginTop="8dp"
+          android:layout_marginBottom="8dp"
+          android:gravity="center_horizontal"
+          android:inputType="textMultiLine|textNoSuggestions"
+          android:scrollbars="vertical"
+          tools:ignore="SpeakableTextPresentCheck,TouchTargetSizeCheck" />
+
+      <TextView
+          android:id="@+id/textView_result"
+          android:layout_width="match_parent"
+          android:layout_height="wrap_content"
+          android:layout_marginTop="8dp"
+          android:layout_marginBottom="8dp"
+          android:gravity="center_horizontal"
+          android:inputType="textMultiLine|textNoSuggestions"
+          android:scrollbars="vertical"
+          tools:ignore="SpeakableTextPresentCheck,TouchTargetSizeCheck" />
+
+      <TextView
+          android:id="@+id/textView_log"
+          android:layout_width="match_parent"
+          android:layout_height="150dp"
+          android:background="@android:color/black"
+          android:padding="8dp"
+          android:scrollbars="vertical"
+          android:textColor="@android:color/white"
+          android:textIsSelectable="true"
+          android:visibility="gone"
+          tools:ignore="SpeakableTextPresentCheck" />
+
+      <androidx.appcompat.widget.SwitchCompat
+          android:id="@+id/Boucle"
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:layout_gravity="center"
+          android:layout_margin="10dp"
+          android:drawableStart="@drawable/ic_baseline_loop_24"
+          android:minHeight="48dp"
+          android:text="@string/loop"
+          android:textColorHighlight="#E30606"
+          android:theme="@style/Theme.Switch"
+          android:visibility="gone"
+          app:useMaterialThemeColors="false" />
+
+    </LinearLayout>
+  </ScrollView>
+
+
 </androidx.constraintlayout.widget.ConstraintLayout>

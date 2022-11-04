@@ -20,12 +20,13 @@
     <string name="interruption">Test Interrupted</string>
     <string name="lien_serveur">Fetch Server Failed</string>
     <string name="Pret">Ready to use</string>
-    <string name="debut">Start speed test</string>
+    <string name="debut">Begin Recording</string>
+    <string name="fin_enr">Stop Recording</string>
     <string name="map">To the map</string>
     <string name="test_wifi">Wi-Fi Test</string>
     <string name="position">Position</string>
     <string name="choix_salle">Place name</string>
-    <string name="ajouter_salle">Add</string>
+    <string name="ajouter_salle">Add position</string>
     <string name="etage0">flour 0</string>
     <string name="etage1">flour 1</string>
     <string name="show_result">Show Result</string>
@@ -58,4 +59,6 @@
     <string name="aide_titre_2">Using map</string>
     <string name="aide_paragraphe_2">Map has been created to display your test result. Before begining a test, define a position. Long press the position where you want to display test result, press "add", and choose a name. You can now start a wifi test.\nUse "show result" to display all test. You will have many options, but the most import is "my test", other are for professional developper</string>
     <string name="aide_paragraphe_3">You need an accurate help? You have bug or improvement to suggest? Contact us!</string>
+    <string name="rssi_wlan">WLAN RSSI</string>
+    <string name="rssi_cellulaire">cellular RSSI</string>
 </resources>

@@ -20,8 +20,10 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
+import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.ToggleButton;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
@@ -56,6 +58,7 @@ import java.nio.file.Paths;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.Hashtable;
 import java.util.List;
@@ -68,6 +71,7 @@ public class MapActivity extends AppCompatActivity {
   private List<Marker> marqueurs = new ArrayList<>();
   private Hashtable<String, List<Integer>> normeDown = new Hashtable<>();
   private Hashtable<String, List<Integer>> normeUp = new Hashtable<>();
+  private Hashtable<String, List<Integer>> normeRSSI = new Hashtable<>();
   private String prefFile = "fullPosition";
 
   @RequiresApi(api = Build.VERSION_CODES.O)
@@ -104,6 +108,7 @@ public class MapActivity extends AppCompatActivity {
     }else{
       mapController.setCenter(new GeoPoint(48.8701, 2.31658));
       mapController.setZoom(11F);
+      findViewById(R.id.etage).setVisibility(View.GONE);
     }
 
     pos = new Marker(map);
@@ -139,6 +144,8 @@ public class MapActivity extends AppCompatActivity {
     normeUp.put("Ewan",List.of(10,40,75,110));
     normeUp.put(getSharedPreferences(prefFile, Context.MODE_PRIVATE).getString("user","inconnu au bataillon"),List.of(10,40,75,110));
 
+    normeRSSI.put("WLAN",List.of(-78,-66,-54,-42));
+    normeRSSI.put("Cell",List.of(-118,-96,-74,-52));
     // calling the action bar
     ActionBar actionBar = getSupportActionBar();
     // showing the back button in action bar
@@ -177,6 +184,10 @@ public class MapActivity extends AppCompatActivity {
         return true;
       case R.id.code_bonus:
         onBonusClick();
+        return true;
+      case R.id.reinit:
+        getSharedPreferences(prefFile, Context.MODE_PRIVATE).edit().clear().apply();
+        finish();
         return true;
       default:break;
     }
@@ -233,7 +244,7 @@ public class MapActivity extends AppCompatActivity {
 
     // A OPTIMISER
   public void etage(View v) {
-    Button bouton = findViewById(R.id.etage);
+    ToggleButton bouton = findViewById(R.id.etage);
     map = findViewById(R.id.map);
     Bitmap vddMapBitmap;
 
@@ -244,7 +255,7 @@ public class MapActivity extends AppCompatActivity {
       constructeur.setMessage("Action unavailible, come back to v1.4");
       constructeur.show();
     }else {
-      if (bouton.getText().toString().equals(getString(R.string.etage0))) {
+      if (bouton.isChecked()) {
         map.getOverlayManager().remove(vddGroundOverlay); // A AMELIORER
         vddMapBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.vdd_n1);
         bouton.setText(getString(R.string.etage1));
@@ -281,21 +292,36 @@ public class MapActivity extends AppCompatActivity {
 
   }
 
-  @RequiresApi(api = Build.VERSION_CODES.O)
-  public void showResult(Boolean upDown, Boolean reference, Boolean Jour, Boolean myTest, Boolean devTest) {
+  public void showResult(int choixDonnee, Boolean reference, Boolean Jour, Boolean myTest, Boolean devTest) {
     Button button = findViewById(R.id.etage);
     List<String[]> dataList = new ArrayList<>();
     String csvSplitBy = ",";
     BufferedReader reader = null;
+    int indice_donnee;
+
+    switch (choixDonnee){
+      case R.id.intensite_WLAN:
+        indice_donnee = 5;
+        break;
+      case R.id.debit_down:
+        indice_donnee = 3;
+        break;
+      case R.id.debit_up:
+        indice_donnee = 4;
+        break;
+      default:
+        indice_donnee = 6;
+    }
+
     if (Boolean.TRUE.equals(devTest)) {
       try {
         reader = new BufferedReader(
                 new InputStreamReader(getAssets().open("ressources/donnees.csv"), StandardCharsets.UTF_8));
         String mLine;
-
+        reader.readLine(); //supprime l'en-tête
         while ((mLine = reader.readLine()) != null) {
           String[] row = mLine.split(csvSplitBy);
-          dataList.add(row);
+          if (!Objects.equals(row[indice_donnee], "--:--") && !Objects.equals(row[indice_donnee], "0")) dataList.add(row);
         }
 
       } catch (IOException e) {
@@ -318,8 +344,11 @@ public class MapActivity extends AppCompatActivity {
       try (Reader br = Files.newBufferedReader(Paths.get(csv)); CSVReader reader2 =
               new CSVReaderBuilder(br).withCSVParser(parser).build()) {
 
-        List<String[]> rows = reader2.readAll();
-        dataList.addAll(rows);
+        String[] ligne;
+        reader2.readNext(); //supprime l'en-t^te
+        while((ligne = reader2.readNext())!=null){
+          if (!Objects.equals(ligne[indice_donnee], "--:--") && !Objects.equals(ligne[indice_donnee], "0")) dataList.add(ligne);
+        }
 
       } catch (IOException | CsvException e) {
         e.printStackTrace();
@@ -333,6 +362,7 @@ public class MapActivity extends AppCompatActivity {
       }
     }
     if (!dataList.isEmpty()) {
+      Log.d(TAG, "showResult: "+dataList.size());
       for (String[] row : dataList) {
         String pattern = "HH:mm";
         SimpleDateFormat sdf = new SimpleDateFormat(pattern);
@@ -343,7 +373,7 @@ public class MapActivity extends AppCompatActivity {
           e.printStackTrace();
         }
         Date heureTest = null;
-        if (button.getText().toString().equals(row[8])){
+        if (button.getText().toString().equals(row[10])){
           try {
             heureTest = sdf.parse(row[1]);
           } catch (ParseException e) {
@@ -351,18 +381,28 @@ public class MapActivity extends AppCompatActivity {
           }
           Log.d(TAG, "showResult: "+reference+Objects.requireNonNull(heureTest).before(heureLimite)+Jour+Objects.requireNonNull(heureTest).after(heureLimite));
           if (((reference && Objects.requireNonNull(heureTest).before(heureLimite)) || (Jour && Objects.requireNonNull(heureTest).after(heureLimite)))) {
+            Log.d(TAG, "showResult: "+ Arrays.toString(row));
             Marker marker = new Marker(map);
             this.marqueurs.add(marker);
 
-            marker.setPosition(new GeoPoint(Double.parseDouble(row[5]), Double.parseDouble(row[6])));
-            marker.setSnippet(String.format("Download Speed: %s Upload Speed: %s User %s", row[3], row[4], row[9]));
+            marker.setPosition(new GeoPoint(Double.parseDouble(row[7]), Double.parseDouble(row[8])));
+            Log.d(TAG, "showResult: "+ Arrays.toString(row));
+            marker.setSnippet(String.format("%s | %s", row[indice_donnee], row[9]));
 
-
-            if (Boolean.TRUE.equals(upDown)) {
-              marker.setIcon(quality(Double.parseDouble(row[4]), Objects.requireNonNull(normeUp.get(row[9]))));
-            } else {
-              marker.setIcon(quality(Double.parseDouble(row[3]), Objects.requireNonNull(normeDown.get(row[9]))));
+            switch (choixDonnee){
+              case R.id.intensite_WLAN:
+                marker.setIcon(quality(Double.parseDouble(row[5]), Objects.requireNonNull(normeRSSI.get("WLAN"))));
+                break;
+              case R.id.debit_down:
+                marker.setIcon(quality(Double.parseDouble(row[3]), Objects.requireNonNull(normeDown.get(row[11]))));
+                break;
+              case R.id.debit_up:
+                marker.setIcon(quality(Double.parseDouble(row[4]), Objects.requireNonNull(normeUp.get(row[11]))));
+                break;
+              default:
+                marker.setIcon(quality(Double.parseDouble(row[6]), Objects.requireNonNull(normeRSSI.get("Cell"))));
             }
+
             marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER);
             map.getOverlayManager().add(marker);
             map.invalidate();
@@ -372,7 +412,6 @@ public class MapActivity extends AppCompatActivity {
     }
   }
 
-  @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
   public Drawable quality (Double debit, List<Integer> valeurs){
     if (debit< valeurs.get(0)){
       
@@ -392,7 +431,6 @@ public class MapActivity extends AppCompatActivity {
     }
   }
 
-  @RequiresApi(api = Build.VERSION_CODES.O)
   public void paramResult(){
     AlertDialog.Builder constructeur = new AlertDialog.Builder(this);
     constructeur.setTitle("Paramètres");
@@ -402,15 +440,7 @@ public class MapActivity extends AppCompatActivity {
     CheckBox testJour = v.findViewById(R.id.test_jour);
     CheckBox myTest = v.findViewById(R.id.mes_tests);
     CheckBox devTest = v.findViewById(R.id.dev_tests);
-    androidx.appcompat.widget.SwitchCompat upDown = v.findViewById(R.id.up_down);
-    TextView upDownTxt = v.findViewById(R.id.up_down_txt);
-    upDown.setOnCheckedChangeListener((buttonView, isChecked) -> {
-      if (upDown.isChecked()){
-        upDownTxt.setText(R.string.upload);
-      }else{
-        upDownTxt.setText(R.string.download);
-      }
-    });
+    RadioGroup choixDonnees = v.findViewById(R.id.choix_donnees);
     devTest.setOnCheckedChangeListener((buttonView, isChecked) -> {
       if (devTest.isChecked()){
         testReference.setVisibility(View.VISIBLE);
@@ -425,7 +455,7 @@ public class MapActivity extends AppCompatActivity {
     constructeur.setView(v);
     constructeur.setNeutralButton("Afficher", (dialog, which) -> {
       if ((myTest.isChecked()||devTest.isChecked())&&(testReference.isChecked()||testJour.isChecked())) {
-        showResult(upDown.isChecked(), testReference.isChecked(), testJour.isChecked(), myTest.isChecked(), devTest.isChecked());
+        showResult(choixDonnees.getCheckedRadioButtonId(), testReference.isChecked(), testJour.isChecked(), myTest.isChecked(), devTest.isChecked());
         dialog.dismiss();
       }else{
         Toast.makeText(this, getString(R.string.error_parametres),Toast.LENGTH_LONG).show();

@@ -33,4 +33,7 @@
         android:id="@+id/code_bonus"
         android:title="@string/bonus_code"
         android:visible="true" />
+    <item
+        android:id="@+id/reinit"
+        android:title="Réinitialiser l'application" />
 </menu>

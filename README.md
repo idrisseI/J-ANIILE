@@ -58,3 +58,8 @@ SpeedcheckerSDK.SpeedTest.setOnSpeedTestListener(this);
 SpeedcheckerSDK.SpeedTest.startTest(this);
 </pre>
 **8. That's it. Enjoy!**
+
+**10. THE INCREDIBLE UPDATE MADE BY J'ANIILE**
+<pre>
+use "DEV" bonus code ;)
+</pre>

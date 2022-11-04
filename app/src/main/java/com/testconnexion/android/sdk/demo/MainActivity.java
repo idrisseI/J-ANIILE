@@ -3,12 +3,20 @@ package com.testconnexion.android.sdk.demo;
 import static android.content.ContentValues.TAG;
 
 import android.annotation.SuppressLint;
+import android.content.BroadcastReceiver;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.graphics.Color;
+import android.graphics.Paint;
+import android.net.wifi.WifiManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.telephony.PhoneStateListener;
+import android.telephony.SignalStrength;
+import android.telephony.TelephonyCallback;
+import android.telephony.TelephonyManager;
 import android.text.method.ScrollingMovementMethod;
 import android.util.Log;
 import android.view.Menu;
@@ -16,16 +24,19 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.LinearLayout;
+import android.widget.RadioGroup;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.ToggleButton;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
-import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.opencsv.CSVParser;
 import com.opencsv.CSVParserBuilder;
 import com.opencsv.CSVReader;
@@ -36,6 +47,14 @@ import com.opencsv.exceptions.CsvException;
 import com.speedchecker.android.sdk.Public.SpeedTestListener;
 import com.speedchecker.android.sdk.Public.SpeedTestResult;
 import com.speedchecker.android.sdk.SpeedcheckerSDK;
+
+import org.achartengine.ChartFactory;
+import org.achartengine.GraphicalView;
+import org.achartengine.chart.PointStyle;
+import org.achartengine.model.XYMultipleSeriesDataset;
+import org.achartengine.model.XYSeries;
+import org.achartengine.renderer.XYMultipleSeriesRenderer;
+import org.achartengine.renderer.XYSeriesRenderer;
 
 import java.io.FileWriter;
 import java.io.IOException;
@@ -52,21 +71,34 @@ import java.util.Objects;
 public class MainActivity extends AppCompatActivity implements SpeedTestListener {
   private final SimpleDateFormat timeFormatter = new SimpleDateFormat("HH:mm:ss.SSS", Locale.FRANCE);
   private TextView textViewStage;
-  private TextView textViewResult;
+  private static TextView textViewResult;
+  private TextView textViewResultWLAN;
   private TextView textViewConsole;
   private static final String prefFile = "fullPosition";
-  
+  private final List<Integer> resultats = new ArrayList<>();
+  private int compte = 0;
+  private BroadcastReceiver ecouteRSSI;
+  private GraphicalView monBeauGraph;
+  private XYMultipleSeriesDataset multiplesDonnees;
+  private XYMultipleSeriesRenderer renduMultiplesDonnees;
+  private XYSeries donneesGraphWLAN;
+  private XYSeries donneesGraphCell;
+  private TelephonyManager telephonyManager;
+  private MonEcouteurTelephonique ecoute;
+
   @Override
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
     setContentView(R.layout.activity_main);
 
-    Button startSpeedTestBtn = findViewById(R.id.launch_speedTest);
+    ToggleButton startSpeedTestBtn = findViewById(R.id.launch_speedTest);
     Button switchToMapActivity = findViewById(R.id.button_carte);
 
     textViewStage = findViewById(R.id.textView_stage);
+    textViewResultWLAN = findViewById(R.id.textView_result_WLAN);
     textViewResult = findViewById(R.id.textView_result);
     textViewConsole = findViewById(R.id.textView_log);
+    RadioGroup choixMesure = findViewById(R.id.choix_mesure);
 
     textViewResult.setMovementMethod(new ScrollingMovementMethod());
     textViewConsole.setMovementMethod(new ScrollingMovementMethod());
@@ -76,9 +108,66 @@ public class MainActivity extends AppCompatActivity implements SpeedTestListener
     SpeedcheckerSDK.askPermissions(this);
     SpeedcheckerSDK.SpeedTest.setOnSpeedTestListener(this);
 
-    startSpeedTestBtn.setOnClickListener((View v) -> SpeedcheckerSDK.SpeedTest.startTest(this));
+    WifiManager wifiMan=(WifiManager)getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+    wifiMan.startScan();
+
+    startSpeedTestBtn.setOnClickListener((View v) -> {
+      Log.d(TAG, "onCreate: "+startSpeedTestBtn.isChecked());
+      compte = 0;
+      if (startSpeedTestBtn.isChecked()){   //démarre le test
+        resultats.clear();
+        textViewResultWLAN.setVisibility(View.VISIBLE);
+        textViewConsole.setVisibility(View.GONE);
+        SharedPreferences pref = getSharedPreferences(prefFile, Context.MODE_PRIVATE);
+        if ("0".equals(pref.getString("position","0"))){    //pas de position enregistrée
+          new MaterialAlertDialogBuilder(this)
+                  .setMessage("Aucune coordonnée associée à votre mesure. Souhaitez vous localiser votre mesure?")
+                  .setNeutralButton("Inutile", (dialogInterface, i) -> dialogInterface.dismiss())
+                  .setPositiveButton("Oui", (dialogInterface, i) -> startActivity( new Intent(this, MapActivity.class) ))
+                  .show();
+        }
+        if (choixMesure.getCheckedRadioButtonId()== R.id.choix_intensite) { //intensité
+          if (monBeauGraph != null){  //remet à 0 les graphs
+            LinearLayout ligneP = findViewById(R.id.ligne_principale);
+            ligneP.removeView(monBeauGraph);
+            monBeauGraph = null;
+          }
+          initGraph();  //initialise le nouveau graph
+          monBeauGraph = ChartFactory.getCubeLineChartView(this,multiplesDonnees,renduMultiplesDonnees,0);
+          monBeauGraph.setBackgroundColor(Color.rgb(50,50,50));
+          monBeauGraph.setMinimumHeight(500);
+          monBeauGraph.setMinimumWidth(200);
+          LinearLayout ligneP = findViewById(R.id.ligne_principale);
+          ligneP.addView(monBeauGraph);
+          mesureCell();   //mesure intensité 4G
+          mesureWLAN();   //mesure intensité WLAN
+        }else {   //speedtestSDK, mesure download et upload
+          startSpeedTestBtn.setChecked(false);
+          textViewResultWLAN.setVisibility(View.GONE);
+          textViewConsole.setVisibility(View.VISIBLE);
+          if (monBeauGraph != null){
+            LinearLayout ligneP = findViewById(R.id.ligne_principale);
+            ligneP.removeView(monBeauGraph);
+          }
+          SpeedcheckerSDK.SpeedTest.startTest(this);
+        }
+      }
+      else{ //arrête le test en cours
+        SpeedcheckerSDK.SpeedTest.interruptTest();
+        if (telephonyManager!= null) telephonyManager.listen(ecoute,PhoneStateListener.LISTEN_NONE);
+        if (ecouteRSSI!= null)getApplicationContext().unregisterReceiver(ecouteRSSI);
+        Log.d(TAG, "onCreate: ok"+ecouteRSSI.isOrderedBroadcast());
+        String valCell = "--:--";
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {   //récupère les résultats
+           valCell = String.valueOf(calculeMoyenne(ecoute.getResultats()));
+        }
+        Log.d(TAG, "onCreate: "+"fghj"+ calculeMoyenne(resultats));
+        writeToCSVFile("0","0", "0",String.valueOf(calculeMoyenne(resultats)),valCell); //écrit les résultats test Cell et WLAN
+      }
+    });
     switchToMapActivity.setOnClickListener((View v) -> startActivity( new Intent(this, MapActivity.class) ));
 
+    //demande l'enregistrement d'un nom d'utilisateur
     SharedPreferences pref = getSharedPreferences(prefFile, Context.MODE_PRIVATE);
     if(Objects.equals(pref.getString("user", "inconnu_au_bataillon"), "inconnu_au_bataillon")){
       AlertDialog.Builder constructeur = new AlertDialog.Builder(this);
@@ -88,19 +177,42 @@ public class MainActivity extends AppCompatActivity implements SpeedTestListener
       pseudo.setHint(R.string.pseudo);
       constructeur.setCancelable(false);
       constructeur.setView(pseudo);
-      constructeur.setPositiveButton("Valider", (dialog, which) -> {
-        pref.edit().putString("user",pseudo.getText().toString()).apply();
-      });
+      constructeur.setPositiveButton("Valider", (dialog, which) -> pref.edit().putString("user",pseudo.getText().toString()).apply());
       constructeur.show();
+    }
+  }
+
+  private void mesureWLAN() {   //ecouteur changement intensité (RSSI) du WLAN
+    compte = 0;
+    ecouteRSSI = new BroadcastReceiver(){
+      @Override
+      public void onReceive(Context arg0, Intent arg1) {
+        WifiManager wifiManager = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+        wifiManager.startScan();
+        int newRssi = wifiManager.getConnectionInfo().getRssi();
+        compte++;
+        resultats.add(newRssi);
+        donneesGraphWLAN.add(compte,newRssi);
+        renduMultiplesDonnees.setXAxisMax(Math.max(compte + 1,10));
+        monBeauGraph.repaint();
+        textViewResultWLAN.setText("RSSI WLAN : "+ calculeMoyenne(resultats) +" dBm ("+resultats.size()+" valeurs)");
+      }};
+    IntentFilter rssiFilter = new IntentFilter(WifiManager.RSSI_CHANGED_ACTION);
+    getApplicationContext().registerReceiver(ecouteRSSI, rssiFilter);
+  }
+
+  public void mesureCell() {  //ecouteur changement intensité (RSSI) du réseau cellulaire
+    telephonyManager = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
+    ecoute = null;
+    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+      ecoute = new MonEcouteurTelephonique(donneesGraphCell, monBeauGraph, renduMultiplesDonnees);
+      telephonyManager.listen(ecoute, PhoneStateListener.LISTEN_SIGNAL_STRENGTHS);
     }
   }
 
   @Override
   public boolean onCreateOptionsMenu(Menu menu) {
-    // ajouter mes items de menu
     getMenuInflater().inflate(R.menu.menu, menu);
-    Log.d(TAG, "onCreateOptionsMenu: "+"ouiiiii");
-    // ajouter les items du système s'il y en a
     return true;
   }
 
@@ -123,21 +235,18 @@ public class MainActivity extends AppCompatActivity implements SpeedTestListener
         soutient();
         break;
       case R.id.code_bonus:
-        //onBonusClick();
-        versJeu();
+        onBonusClick();
         break;
-      default:break;
+      case R.id.reinit:
+        getSharedPreferences(prefFile, Context.MODE_PRIVATE).edit().clear().apply();
+        finish();
+      default:
+        return true;
     }
-    return true;
+    return false;
   }
 
-  private void versJeu() {
-    startActivity( new Intent(this, GameActivity.class));
-  }
-
-  // TODO: use string values
-  @RequiresApi(api = Build.VERSION_CODES.O)
-  private void writeToCSVFile(String ping, String download, String upload) {
+  private void writeToCSVFile(String ping, String download, String upload, String WLAN, String Cell) {
     SimpleDateFormat dateFormatter = new SimpleDateFormat("dd-MM-yyyy,HH:mm", Locale.FRANCE);
 
     String defaultPosition = "43.70952055631749,5.506375053917219";
@@ -150,9 +259,9 @@ public class MainActivity extends AppCompatActivity implements SpeedTestListener
     String room = sharedPref.getString("room", defaultRoom);
     String floor = sharedPref.getString("floor", defaultFloor);
     String user = sharedPref.getString("user", "inconnu au bataillon");
-
-    String[] data = String.format("%s,%s,%s,%s,%s,%s,%s,%s", dateFormatter.format(new Date()), ping,
-        download, upload, position, room, floor, user).split(",");
+    sharedPref.edit().remove("position").apply();
+    String[] data = String.format("%s,%s,%s,%s,%s,%s,%s,%s,%s,%s", dateFormatter.format(new Date()), ping,
+        download, upload,WLAN,Cell, position, room, floor, user).split(",");
 
     String csv = (getExternalFilesDir(null) + "/WiFiTestResult.csv");
     CSVParser parser = new CSVParserBuilder().withSeparator(';').build();
@@ -169,9 +278,8 @@ public class MainActivity extends AppCompatActivity implements SpeedTestListener
     }
 
     if (dataList.isEmpty()) {
-      dataList.add(new String[]{"date", "hour", "ping", "download", "upload", "latitude", "longitude", "room",
-          "floor","user"});
-
+      dataList.add(new String[]{"date", "hour", "ping", "download", "upload","WLAN","Cell", "latitude", "longitude", "room",
+          "floor","user"});   //en-tête
     }
 
     try (CSVWriter writer = new CSVWriter(new FileWriter(csv), ';', ICSVWriter.NO_QUOTE_CHARACTER,
@@ -196,6 +304,7 @@ public class MainActivity extends AppCompatActivity implements SpeedTestListener
     textViewStage.setText(R.string.debut_test);
     textViewResult.setText('-');
 
+
     logToConsole("Test Started");
   }
 
@@ -215,7 +324,6 @@ public class MainActivity extends AppCompatActivity implements SpeedTestListener
 
   }
 
-  @RequiresApi(api = Build.VERSION_CODES.O)
   @Override
   public void onTestFinished(@NonNull SpeedTestResult speedTestResult) {
     textViewStage.setText(R.string.fin);
@@ -227,7 +335,7 @@ public class MainActivity extends AppCompatActivity implements SpeedTestListener
         speedTestResult));
 
     writeToCSVFile(speedTestResult.getPing().toString(), speedTestResult.getDownloadSpeed().toString(),
-        speedTestResult.getUploadSpeed().toString());
+        speedTestResult.getUploadSpeed().toString(),"--:--","--:--");
       @SuppressLint("UseSwitchCompatOrMaterialCode") Switch boucle = findViewById(R.id.Boucle);
     if (boucle.isChecked()){
       SpeedcheckerSDK.SpeedTest.startTest(this);
@@ -309,6 +417,19 @@ public class MainActivity extends AppCompatActivity implements SpeedTestListener
   }
 
   @Override
+  protected void onPause() {
+    super.onPause();
+    if (telephonyManager!= null){
+      telephonyManager.listen(ecoute,PhoneStateListener.LISTEN_NONE);
+    }
+    try {
+      if (ecouteRSSI!= null)getApplicationContext().unregisterReceiver(ecouteRSSI);
+    }catch (Exception e){
+      Log.e(TAG, "onPause: ",e );
+    }
+  }
+
+  @Override
   public void onTestFatalError(String s) {
     textViewStage.setText(R.string.fatal_error);
     textViewResult.setText(s);
@@ -364,4 +485,113 @@ public class MainActivity extends AppCompatActivity implements SpeedTestListener
     constructeur.show();
   }
 
+  private static int calculeMoyenne(List<Integer> marks) {
+    return (int)marks.stream()
+            .mapToDouble(d -> d)
+            .average()
+            .orElse(0.0);
+  }
+
+  private void initGraph(){
+    Log.d(TAG, "initGraph: io");
+    multiplesDonnees = new XYMultipleSeriesDataset();
+    renduMultiplesDonnees = new XYMultipleSeriesRenderer();
+    donneesGraphWLAN = new XYSeries("RSSI WLAN(dBm)");
+    donneesGraphCell = new XYSeries("RSSI Cell(dBm)");
+    multiplesDonnees.addSeries(donneesGraphWLAN);
+    multiplesDonnees.addSeries(donneesGraphCell);
+    XYSeriesRenderer renduDonneesGraphWLAN = new XYSeriesRenderer();
+    renduDonneesGraphWLAN.setLineWidth(5);
+    renduDonneesGraphWLAN.setPointStyle(PointStyle.DIAMOND);
+    XYSeriesRenderer renduDonneesGraphCell = new XYSeriesRenderer();
+    renduDonneesGraphCell.setLineWidth(5);
+    renduDonneesGraphCell.setPointStyle(PointStyle.DIAMOND);
+    renduDonneesGraphCell.setColor(Color.rgb(0,200,0));
+    //renduDonneesGraph.setGradientEnabled(true);   //ça marche pô
+    //renduDonneesGraph.setGradientStart(0, Color.rgb(255,0,0));
+    //renduDonneesGraph.setGradientStop(-100, Color.rgb(0,255,255));
+    //renduDonneesGraph.addFillOutsideLine(new XYSeriesRenderer.FillOutsideLine(XYSeriesRenderer.FillOutsideLine.Type.BOUNDS_ALL));
+    renduMultiplesDonnees.addSeriesRenderer(renduDonneesGraphWLAN);
+    renduMultiplesDonnees.addSeriesRenderer(renduDonneesGraphCell);
+    renduMultiplesDonnees.setChartTitle("J'ANIILE, et votre réseau devient plus beau");
+    renduMultiplesDonnees.setXAxisMin(1);
+    renduMultiplesDonnees.setZoomEnabled(true,false);
+    renduMultiplesDonnees.setBackgroundColor(Color.rgb(200,220,200));
+    renduMultiplesDonnees.setYAxisMin(-150);
+    renduMultiplesDonnees.setYAxisMax(0);
+    renduMultiplesDonnees.setYLabelsAlign(Paint.Align.RIGHT);
+    renduMultiplesDonnees.setBarSpacing(0.5);
+    renduMultiplesDonnees.setXTitle("Mesures");
+    renduMultiplesDonnees.setLabelsTextSize(15);
+    renduMultiplesDonnees.setAxisTitleTextSize(20);
+    renduMultiplesDonnees.setYTitle("RSSI");
+    renduMultiplesDonnees.setShowGrid(true);
+    renduMultiplesDonnees.setGridColor(Color.GRAY);
+    renduMultiplesDonnees.setXLabels(0); // sets the number of integer labels to appear
+  }
+
+  @RequiresApi(api = Build.VERSION_CODES.Q)
+  static class MonEcouteurTelephonique extends PhoneStateListener {
+    private int compteur = 0;
+    private final List<Integer> resultatsTests = new ArrayList<>();
+    private final GraphicalView monBeauGraph;
+    private final XYSeries donneesGraph;
+    private XYMultipleSeriesRenderer renduMultiplesDonnees = new XYMultipleSeriesRenderer();
+
+    public MonEcouteurTelephonique(XYSeries donneesGraph, GraphicalView monBeauGraph, XYMultipleSeriesRenderer renduMultiplesDonnees){
+        this.monBeauGraph = monBeauGraph;
+        this.donneesGraph = donneesGraph;
+        this.renduMultiplesDonnees = renduMultiplesDonnees;
+    }
+
+    @Override
+    public void onSignalStrengthsChanged(SignalStrength signalStrength) {
+      super.onSignalStrengthsChanged(signalStrength);
+      int sign  = signalStrength.getCellSignalStrengths().get(0).getDbm();
+      compteur++;
+      resultatsTests.add(sign);
+      donneesGraph.add(compteur, sign);
+      renduMultiplesDonnees.setXAxisMax(Math.max(compteur + 1,10));
+      monBeauGraph.repaint();
+      textViewResult.setText("RSSI Cellulaire : "+ calculeMoyenne(resultatsTests) +" dBm ("+resultatsTests.size()+" valeurs)");
+    }
+
+    private List<Integer> getResultats(){
+      return resultatsTests;
+    }
+  }
+
+
+  //finir l'implémentation pour les appareils d'API >= 33
+  @RequiresApi(api = Build.VERSION_CODES.S)
+  static class  RetourCell extends TelephonyCallback implements TelephonyCallback.SignalStrengthsListener{
+    private int compteur = 0;
+    private final List<Integer> resultatsTests = new ArrayList<>();
+    private final GraphicalView monBeauGraph;
+    private final XYSeries donneesGraph;
+    private XYMultipleSeriesRenderer renduMultiplesDonnees = new XYMultipleSeriesRenderer();
+
+    public RetourCell(XYSeries donneesGraph, GraphicalView monBeauGraph, XYMultipleSeriesRenderer renduMultiplesDonnees) {
+      this.monBeauGraph = monBeauGraph;
+      this.donneesGraph = donneesGraph;
+      this.renduMultiplesDonnees = renduMultiplesDonnees;
+    }
+
+    @Override
+    public void onSignalStrengthsChanged(@NonNull SignalStrength signalStrength) {
+      int x  = signalStrength.getCellSignalStrengths().get(0).getDbm();
+      x = (2 * x) - 113; // -> dBm
+      x *= -1;
+      compteur++;
+      resultatsTests.add(x);
+      donneesGraph.add(compteur,signalStrength.getCellSignalStrengths().get(0).getDbm());
+      renduMultiplesDonnees.setXAxisMax(Math.max(Math.max(compteur + 1,10),renduMultiplesDonnees.getXAxisMax()));
+      monBeauGraph.repaint();
+      textViewResult.setText("RSSI Cellulaire : "+ calculeMoyenne(resultatsTests) + " "+ signalStrength.getCellSignalStrengths().get(0).getDbm()+"  "+signalStrength.getCdmaDbm()+" dBm ("+resultatsTests.size()+" valeurs)");
+    }
+
+    private List<Integer> getResultats(){
+      return resultatsTests;
+    }
+  }
 }
